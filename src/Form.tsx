@@ -15,8 +15,8 @@ import { BiShow } from 'react-icons/bi';
 // Import hook form
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import YupPassword from 'yup-password';
 import { yupResolver } from '@hookform/resolvers/yup';
+import YupPassword from 'yup-password';
 
 YupPassword(yup);
 
@@ -53,13 +53,13 @@ const schema = yup.object({
   password: yup
     .string()
     .min(8, 'Le mot de passe doit contenir au moins 8 caractère')
-    .minLowercase(1, 'Le mot de passe doit contenir au moins une minuscule')
-    .minUppercase(1, 'Le mot de passe doit contenir au moins une majuscule')
-    .minNumbers(1, 'Le mot de passe doit contenir au moins un nombre')
+    .minLowercase(1, 'Le mot de passe doit contenir au moins une minuscule') //yup-password
+    .minUppercase(1, 'Le mot de passe doit contenir au moins une majuscule') //yup-password
+    .minNumbers(1, 'Le mot de passe doit contenir au moins un nombre') //yup-password
     .minSymbols(
       1,
       'Le mot de passe doit contenir au moins un caractère spécial'
-    )
+    ) //yup-password
     .required(),
   confirmPassword: yup
     .string()
@@ -103,6 +103,8 @@ function App() {
   const onSubmit = async (data: Inputs) => {
     console.log(data);
     console.log(formState);
+
+    // On pourrais récupérer isSubmitSuccessful dans le .then() et faire une redirection si c'est true
     await wait();
   };
 
@@ -232,7 +234,9 @@ function App() {
         >
           Envoyer
         </Button>
-        {isSubmitSuccessful && <p className='messageSuccess'>Le formulaire a bien été soumis</p>}
+        {isSubmitSuccessful && (
+          <p className="messageSuccess">Le formulaire a bien été soumis</p>
+        )}
       </form>
     </div>
   );
