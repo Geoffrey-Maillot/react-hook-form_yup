@@ -11,18 +11,60 @@ import Checkbox from '@material-ui/core/Checkbox';
 // React icon
 import { BiHide } from 'react-icons/bi';
 import { BiShow } from 'react-icons/bi';
-
-// Import hook form
 import { useForm } from 'react-hook-form';
-import * as yup from 'yup';
-import YupPassword from 'yup-password';
-import { yupResolver } from '@hookform/resolvers/yup';
 
-YupPassword(yup);
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const schema = z
+  .object({
+    name: z.object({
+      lastName: z
+        .string()
+        .min(1, { message: 'Le nom est obligatoire' })
+        .min(2, { message: 'Le nom doit contenir au moins 2 letttres' }),
+      firstName: z
+        .string()
+        .min(1, { message: 'Le prénom est obligatoire' })
+        .min(2, { message: 'Le nom doit contenir au moins 2 letttres' }),
+    }),
+    email: z
+      .string()
+      .min(1, { message: "L'Email est obligatoire" })
+      .email({ message: 'Veuillez rentrer un email valide' }),
+    confirmEmail: z.string(),
+    password: z.string().min(6, {
+      message: 'Le mot de passe doit contenir au moins 6 caractère',
+    }),
+    confirmPassword: z.string(),
+    adress: z.string().min(1, { message: 'Ce champ est obligatoire' }),
+    zipCode: z.coerce
+      .number({ errorMap: () => ({ message: 'Entrer un code postal valide' }) })
+      .refine((n) => n.toString().length === 5, {
+        message: 'Entrer un code postal valide',
+      })
+      .transform((zip) => Number(zip)),
+    city: z.string().min(1, { message: 'Ce champ est obligatoire' }),
+    termsOfUse: z.literal(true, {
+      errorMap: () => ({
+        message: 'Vous deveez accepter les termes avant de continuer',
+      }),
+    }),
+  })
+  .refine((form) => form.email === form.confirmEmail, {
+    path: ['confirmEmail'],
+    message: 'Les emails doivent correspondrent',
+  })
+  .refine((form) => form.password === form.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Les mots de passe doivent coorespondrent',
+  });
 
 interface Inputs {
-  lastName: string;
-  firstName: string;
+  name: {
+    lastName: string;
+    firstName: string;
+  };
   email: string;
   confirmEmail: string;
   password: string;
@@ -32,52 +74,6 @@ interface Inputs {
   city: string;
   termsOfUse: boolean;
 }
-
-const schema = yup.object({
-  lastName: yup
-    .string()
-    .min(2, 'Il doit y avoir au moins deux lettres')
-    .required('Ce champ est obligatoire'),
-  firstName: yup
-    .string()
-    .min(2, 'Il doit y avoir au moins deux lettres')
-    .required('Ce champ est obligatoire'),
-  email: yup
-    .string()
-    .email('Veuillez rentrer une adresse email valide')
-    .required('Ce champ est obligatoire'),
-  confirmEmail: yup
-    .string()
-    .oneOf([yup.ref('email')], 'Les emails doivent correspondrent ')
-    .required('Ce champ est obligatoire'),
-  password: yup
-    .string()
-    .min(8, 'Le mot de passe doit contenir au moins 8 caractère')
-    .minLowercase(1, 'Le mot de passe doit contenir au moins une minuscule')
-    .minUppercase(1, 'Le mot de passe doit contenir au moins une majuscule')
-    .minNumbers(1, 'Le mot de passe doit contenir au moins un nombre')
-    .minSymbols(
-      1,
-      'Le mot de passe doit contenir au moins un caractère spécial'
-    )
-    .required(),
-  confirmPassword: yup
-    .string()
-    .oneOf([yup.ref('password')], 'Les mots de passe doivent correcpondre')
-    .required('Ce champ est obligatoire'),
-  adress: yup.string().required('Ce champ est obligatoire'),
-  zipCode: yup
-    .string()
-    .length(5, 'Le code postal doit contenir 5 chiffres')
-    .matches(/^[0-9]+$/, 'Le code postal ne peu contenir que des chiffres')
-
-    .required('Ce champ est obligatoire'),
-  city: yup.string().required('Ce champ est obligatoire'),
-  termsOfUse: yup
-    .bool()
-    .oneOf([true], "Veuillez accepter les conditions d'utilisation")
-    .required('Ce champ est obligatoire'),
-});
 
 function App() {
   const [passwordIsVisible, togglePasswordIsVisible] = useState<boolean>(false);
@@ -90,12 +86,12 @@ function App() {
     formState,
     formState: { errors, isSubmitting, isSubmitSuccessful },
   } = useForm<Inputs>({
-    resolver: yupResolver(schema),
+    resolver: zodResolver(schema),
     mode: 'onTouched',
   });
 
   const wait = function () {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       setTimeout(() => resolve('Success'), 1000);
     });
   };
@@ -113,18 +109,18 @@ function App() {
       </header>
       <form className="form" onSubmit={handleSubmit(onSubmit)}>
         <TextField
-          error={!!errors.lastName}
-          helperText={errors.lastName?.message}
+          error={!!errors.name?.lastName?.message}
+          helperText={errors.name?.lastName?.message}
           fullWidth
           label="Votre nom"
-          {...register('lastName')}
+          {...register('name.lastName')}
         />
         <TextField
-          error={!!errors.firstName}
-          helperText={errors.firstName?.message}
+          error={!!errors.name?.firstName?.message}
+          helperText={errors.name?.firstName?.message}
           fullWidth
           label="Votre Prénom"
-          {...register('firstName')}
+          {...register('name.firstName')}
         />
         <TextField
           error={!!errors.email}
@@ -232,7 +228,9 @@ function App() {
         >
           Envoyer
         </Button>
-        {isSubmitSuccessful && <p className='messageSuccess'>Le formulaire a bien été soumis</p>}
+        {isSubmitSuccessful && (
+          <p className="messageSuccess">Le formulaire a bien été soumis</p>
+        )}
       </form>
     </div>
   );
